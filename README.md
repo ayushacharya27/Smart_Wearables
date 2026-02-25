@@ -45,7 +45,7 @@ acc = window[:, :3] # First 3 Values i.e. ax, ay, az
 mag = np.linalg.norm(acc, axis=1) # mag = mag = sqrt(ax² + ay² + az²)
 ```
 
-Now we can calculate the 10 Context Feautures:
+Now we can calculate the 6 Context Feautures:
 ```python
 # mean(|acc|)
 np.std(mag)
@@ -68,7 +68,7 @@ np.var(acc) # More spread = more dynamic movement
 np.sum(np.abs(acc)) / len(acc) # Finds Average Accelaration
 ```
 
-#### mean gravity_z
+#### 7. mean gravity_z
 ```bash
 np.mean(np.abs(gravity[:, 2]))
 ```
@@ -97,12 +97,12 @@ gravity[:,2] → gravity_z
 gravity_z = gravity[:, 2]
 ```
 
-#### Other Context Features
+#### 8. Other Context Features
 ```python
 # mean acc_z, Its Easy
 ```
 
-#### step_freq
+#### 9. step_freq
 Calculates How Frequently Steps are Taken
 
 ```python
@@ -113,7 +113,7 @@ step_freq = zero_cross / (len(acc) / sampling_rate)
 How many times the z value has crossed 0, thus calculating steps
 
 
-#### low_motion_ratio
+#### 10. low_motion_ratio
 Counts how many samples have very low acceleration.
 ```python
 np.sum(mag < 0.1) / len(mag)
