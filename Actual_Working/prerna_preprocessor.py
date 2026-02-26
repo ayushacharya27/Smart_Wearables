@@ -6,9 +6,9 @@ from scipy import signal
 class HARPreprocessor:
     def __init__(self):
         # Load saved objects
-        self.sensor_scaler = joblib.load("sensor_scaler1.pkl")
-        self.context_scaler = joblib.load("context_scaler1.pkl")
-        self.config = joblib.load("config1.pkl")
+        self.sensor_scaler = joblib.load("/home/ayush/Smart_Wearables/Model_Files/sensor_scaler1.pkl")
+        self.context_scaler = joblib.load("/home/ayush/Smart_Wearables/Model_Files/context_scaler1.pkl")
+        self.config = joblib.load("/home/ayush/Smart_Wearables/Model_Files/config1.pkl")
 
         self.window_size = self.config['window']
         self.sampling_rate = self.config['sr']

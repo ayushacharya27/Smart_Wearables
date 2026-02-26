@@ -37,3 +37,5 @@ Get the Final Activity
 idx, confidence = belief_node.top
 final_activity = belief_node.activity_names[idx]
 ```
+
+This will finally go to the Temporal Memory Func, Ashish will Write
