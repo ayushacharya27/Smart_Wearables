@@ -29,7 +29,7 @@ raw_probs = model.predict([X, C])[0] # From model_predict.py
 
 Get Smoothed Out Probability
 ```python
-smoothed_probs = belief_node.update(raw_probs)
+smoothed_probs = belief_node.update(raw_probs) # Input For Temporal
 ```
 
 Get the Final Activity

@@ -1,5 +1,3 @@
-# agents/belief_node.py
-
 import numpy as np
 
 
@@ -26,14 +24,14 @@ class BeliefNode:
         self._belief = np.ones(self.num_classes, dtype=np.float32) / self.num_classes
         self._step = 0
 
-    
+   
 
     def update(self, raw_probs: np.ndarray) -> np.ndarray:
         """
         Update belief using model softmax output.
 
         raw_probs: shape (num_classes,)
-        returns: updated belief (shape (num_classes,))
+        returns: smoothed_probs (shape (num_classes,))
         """
 
         raw_probs = np.asarray(raw_probs, dtype=np.float32)
@@ -41,29 +39,29 @@ class BeliefNode:
         if raw_probs.shape[0] != self.num_classes:
             raise ValueError("Wrong number of classes")
 
-        # Normalize just in case
+        # Normalize
         raw_probs = raw_probs / (raw_probs.sum() + 1e-12)
 
         # Exponential smoothing
-        self._belief = (
+        smoothed_probs = (
             self.alpha * raw_probs +
             (1.0 - self.alpha) * self._belief
         )
 
         # Renormalize
-        self._belief = self._belief / (self._belief.sum() + 1e-12)
+        smoothed_probs = smoothed_probs / (smoothed_probs.sum() + 1e-12)
 
+        # Store as current belief (memory update)
+        self._belief = smoothed_probs
         self._step += 1
-        return self._belief.copy()
 
-    
+        return smoothed_probs.copy()
+
+   
 
     def reset(self):
-        """Reset belief to uniform distribution."""
         self._belief = np.ones(self.num_classes, dtype=np.float32) / self.num_classes
         self._step = 0
-
-    
 
     @property
     def belief(self):
