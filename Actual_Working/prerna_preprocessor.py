@@ -3,15 +3,29 @@ import joblib
 from scipy import signal
 
 
-class HARPreprocessor:
-    def __init__(self):
-        # Load saved objects
-        self.sensor_scaler = joblib.load("/home/ayush/Smart_Wearables/Model_Files/sensor_scaler1.pkl")
-        self.context_scaler = joblib.load("/home/ayush/Smart_Wearables/Model_Files/context_scaler1.pkl")
-        self.config = joblib.load("/home/ayush/Smart_Wearables/Model_Files/config1.pkl")
+# import os
+# import joblib
+# import numpy
+# import sys
 
+# sys.modules['numpy._core'] = numpy.core
+
+
+
+class HARPreprocessor:
+    def __init__(self, model_dir):
+        # Load saved objects
+        import os
+
+        # print("Loaded prerna_preprocessor.py")
+        self.sensor_scaler = joblib.load(os.path.join(model_dir, "sensor_scaler1.pkl"))
+        self.context_scaler = joblib.load(os.path.join(model_dir, "context_scaler1.pkl"))
+        self.config = joblib.load(os.path.join(model_dir, "config1.pkl"))
+        
         self.window_size = self.config['window']
         self.sampling_rate = self.config['sr']
+        print("Config window:", self.window_size)
+        print("Config sampling rate:", self.sampling_rate)
 
     # Low-pass filter 
     def _lowpass(self, data, cutoff=20):

@@ -1,8 +1,8 @@
 import serial
 import numpy as np
 
-
-def collect_window(port="/dev/ttyUSB0",
+# def collect_window(port="/dev/ttyUSB0",
+def collect_window(port="COM6",
                    baudrate=115200,
                    window_size=128):
     """
@@ -34,6 +34,8 @@ def collect_window(port="/dev/ttyUSB0",
 
             if len(values) == 6:
                 buffer.append(values)
+            # if len(values) == 7:
+            #     buffer.append(values[1:])   # ignore timestamp
 
         except:
             continue

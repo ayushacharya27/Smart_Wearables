@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HAR Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,500;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e1117;--panel:#161b26;--border:#232a38;
+  --text:#e2e8f0;--muted:#6b7a99;--accent:#4f9cf9;
+  --green:#34d399;--amber:#fbbf24;--red:#f87171;--purple:#a78bfa;
+  --radius:12px;
+}
+body{background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);min-height:100vh}
+.shell{display:grid;grid-template-columns:240px 1fr;grid-template-rows:56px 1fr;height:100vh}
+
+/* Topbar */
+.topbar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--panel);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:-.3px}
+.brand-icon{width:28px;height:28px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.topbar-right{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted)}
+.conn-badge{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:12px;border:1px solid var(--border);transition:all .3s;cursor:pointer}
+.conn-badge.connected{border-color:#34d39966;color:var(--green)}
+.conn-badge.connecting{border-color:#fbbf2466;color:var(--amber)}
+.conn-badge.disconnected{border-color:#f8717166;color:var(--red)}
+.conn-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.conn-badge.connected .conn-dot{animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.time-badge{font-family:'DM Mono',monospace;font-size:13px;color:var(--text)}
+
+/* Sidebar */
+.sidebar{background:var(--panel);border-right:1px solid var(--border);padding:20px 12px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.nav-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 10px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:13px;color:var(--muted);background:none;border:none;width:100%;text-align:left;cursor:pointer;transition:all .15s}
+.nav-item:hover{background:var(--border);color:var(--text)}
+.nav-item.active{background:#1e3a5f;color:var(--accent);font-weight:500}
+.nav-icon{font-size:15px;width:18px;text-align:center}
+.sidebar-footer{margin-top:auto;padding-top:12px;border-top:1px solid var(--border)}
+.device-badge{padding:10px;background:var(--bg);border-radius:var(--radius)}
+.db-label{color:var(--muted);margin-bottom:2px;font-size:11px}
+.db-val{font-family:'DM Mono',monospace;color:var(--green);font-size:12px}
+
+/* Main */
+.main{overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+
+/* Connection panel */
+.conn-panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.ws-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.ws-input{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:7px 12px;flex:1;outline:none}
+.ws-input:focus{border-color:var(--accent)}
+.ws-btn{padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--accent);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.ws-btn:hover{background:#1e3a5f;border-color:var(--accent)}
+.ws-btn.red{color:var(--red)}
+.ws-btn.red:hover{background:#2d1414;border-color:#7f2020}
+.conn-status-text{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* Hero */
+.hero{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.activity-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.activity-name{font-size:38px;font-weight:700;letter-spacing:-1.5px;transition:color .4s}
+.conf-row{display:flex;align-items:center;gap:10px;margin-top:6px}
+.conf-track{flex:1;height:4px;background:var(--border);border-radius:2px}
+.conf-fill{height:100%;border-radius:2px;transition:width .5s ease,background .4s}
+.conf-pct{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);min-width:36px;text-align:right}
+.hint{font-size:12px;color:var(--muted);margin-top:6px;min-height:16px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat-card{background:var(--bg);border-radius:10px;padding:12px}
+.sc-label{font-size:11px;color:var(--muted);margin-bottom:3px}
+.sc-val{font-size:20px;font-weight:700;font-family:'DM Mono',monospace}
+
+/* Section */
+.section-title{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+
+/* Prob bars */
+.prob-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.prob-name{width:90px;font-size:12px;color:var(--muted);flex-shrink:0}
+.prob-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.prob-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.prob-pct{width:36px;text-align:right;font-family:'DM Mono',monospace;font-size:12px;color:var(--text)}
+
+/* Timeline */
+.timeline-strip{display:flex;gap:3px;height:28px;margin-top:8px}
+.ts-block{flex:1;border-radius:3px;transition:background .4s}
+
+/* Alerts */
+.alert-list{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto}
+.alert-item{display:flex;gap:10px;padding:10px 12px;border-radius:8px;font-size:13px;line-height:1.4;border:1px solid transparent;animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.alert-item.critical{background:#2d1414;border-color:#7f2020;color:#fca5a5}
+.alert-item.high{background:#2d1f0e;border-color:#7a4f1a;color:#fcd34d}
+.alert-item.warn{background:#1e2a1e;border-color:#2a5c2a;color:#86efac}
+.alert-item.info{background:#1a2540;border-color:#1e3a5f;color:#93c5fd}
+.adot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.alert-item.critical .adot{background:#f87171}
+.alert-item.high .adot{background:#fbbf24}
+.alert-item.warn .adot{background:#34d399}
+.alert-item.info .adot{background:#60a5fa}
+.alert-time{margin-left:auto;font-size:11px;opacity:.45;flex-shrink:0;padding-left:8px}
+.empty-alerts{color:var(--muted);font-size:13px;text-align:center;padding:20px}
+
+/* Raw data */
+.raw-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.raw-cell{background:var(--bg);border-radius:8px;padding:8px;text-align:center}
+.raw-cell .rc-label{font-size:10px;color:var(--muted);margin-bottom:2px}
+.raw-cell .rc-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="5" stroke="white" stroke-width="1.5"/>
+          <path d="M5 8l2 2 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      HAR
+    </div>
+    <div class="topbar-right">
+      <div class="conn-badge disconnected" id="conn-badge" onclick="toggleConnect()">
+        <div class="conn-dot"></div>
+        <span id="conn-text">Disconnected</span>
+      </div>
+      <span class="time-badge" id="clock">--:--:--</span>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="nav-label">Monitor</div>
+    <button class="nav-item active"><span class="nav-icon">📊</span>Dashboard</button>
+    <button class="nav-item"><span class="nav-icon">📈</span>History</button>
+    <button class="nav-item"><span class="nav-icon">🔔</span>Alerts</button>
+    <div class="nav-label" style="margin-top:8px">System</div>
+    <button class="nav-item"><span class="nav-icon">⚙️</span>Settings</button>
+    <button class="nav-item"><span class="nav-icon">🧠</span>Model Info</button>
+    <div class="sidebar-footer">
+      <div class="device-badge">
+        <div class="db-label">Device</div>
+        <div class="db-val">MPU-6050 · IMU</div>
+        <div style="margin-top:8px" class="db-label">Windows processed</div>
+        <div class="db-val" id="sb-windows">0</div>
+        <div style="margin-top:8px" class="db-label">Last update</div>
+        <div class="db-val" id="sb-last">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Connection panel -->
+    <div class="conn-panel">
+      <div class="section-title">WebSocket Connection</div>
+      <div class="ws-row">
+        <input class="ws-input" id="ws-url" value="ws://localhost:8765" placeholder="ws://localhost:8765"/>
+        <button class="ws-btn" onclick="connectWS()">Connect</button>
+        <button class="ws-btn red" onclick="disconnectWS()">Disconnect</button>
+      </div>
+      <div class="conn-status-text" id="conn-status">
+        Start <code>python ws_server.py</code> first, then click Connect.
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <div class="hero">
+      <div>
+        <div class="activity-label">Current Activity</div>
+        <div class="activity-name" id="act-name" style="color:var(--muted)">—</div>
+        <div class="conf-row">
+          <div class="conf-track"><div class="conf-fill" id="conf-fill" style="width:0%;background:var(--muted)"></div></div>
+          <span class="conf-pct" id="conf-pct">—</span>
+        </div>
+        <div class="hint" id="hint">Waiting for sensor data…</div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="sc-label">Session time</div>
+          <div class="sc-val" id="st-session" style="color:var(--accent)">00:00</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-label">Active time</div>
+          <div class="sc-val" id="st-active" style="color:var(--green)">00:00</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-label">Sitting time</div>
+          <div class="sc-val" id="st-sit" style="color:var(--red)">00:00</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-label">Windows</div>
+          <div class="sc-val" id="st-windows" style="color:var(--purple)">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Probability Bars -->
+    <div class="card">
+      <div class="section-title">Activity Probabilities (smoothed)</div>
+      <div id="prob-rows"></div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card">
+      <div class="section-title">Activity Timeline — last 60 predictions</div>
+      <div class="timeline-strip" id="timeline">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <!-- Raw sensor means -->
+    <div class="card">
+      <div class="section-title">Raw Sensor Means (last window)</div>
+      <div class="raw-grid">
+        <div class="raw-cell"><div class="rc-label">Acc X</div><div class="rc-val" id="raw-ax" style="color:var(--red)">—</div></div>
+        <div class="raw-cell"><div class="rc-label">Acc Y</div><div class="rc-val" id="raw-ay" style="color:var(--green)">—</div></div>
+        <div class="raw-cell"><div class="rc-label">Acc Z</div><div class="rc-val" id="raw-az" style="color:var(--accent)">—</div></div>
+        <div class="raw-cell"><div class="rc-label">Gyro X</div><div class="rc-val" id="raw-gx" style="color:var(--red)">—</div></div>
+        <div class="raw-cell"><div class="rc-label">Gyro Y</div><div class="rc-val" id="raw-gy" style="color:var(--green)">—</div></div>
+        <div class="raw-cell"><div class="rc-label">Gyro Z</div><div class="rc-val" id="raw-gz" style="color:var(--accent)">—</div></div>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="section-title" style="margin:0">Health Alerts</div>
+        <button onclick="clearAlerts()" style="font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif">Clear all</button>
+      </div>
+      <div class="alert-list" id="alert-list">
+        <div class="empty-alerts">No alerts yet — keep moving!</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const ACTIVITIES = ["Walking","Jogging","Upstairs","Downstairs","Sitting","Standing"];
+const COLORS = {
+  Walking:"#34d399", Jogging:"#fbbf24", Upstairs:"#60a5fa",
+  Downstairs:"#c084fc", Sitting:"#f87171", Standing:"#94a3b8"
+};
+const HINTS = {
+  Walking:"Steady cadence detected",
+  Jogging:"High-frequency movement",
+  Upstairs:"Ascending stair pattern",
+  Downstairs:"Descending stair pattern",
+  Sitting:"Sedentary posture",
+  Standing:"Upright, low movement"
+};
+const RAW_IDS = ["raw-ax","raw-ay","raw-az","raw-gx","raw-gy","raw-gz"];
+
+let ws = null;
+let timeline = [], alerts = [];
+let sessionSec = 0, activeSec = 0, sittingSec = 0;
+const ACTIVE_SET = new Set(["Walking","Jogging","Upstairs","Downstairs"]);
+
+// Build probability rows
+document.getElementById('prob-rows').innerHTML = ACTIVITIES.map((a,i) => `
+  <div class="prob-row">
+    <div class="prob-name">${a}</div>
+    <div class="prob-track"><div class="prob-fill" id="pb${i}" style="background:${COLORS[a]};width:0%"></div></div>
+    <div class="prob-pct" id="pp${i}">0%</div>
+  </div>`).join('');
+
+// Build empty timeline
+document.getElementById('timeline').innerHTML =
+  Array(60).fill(0).map(() => `<div class="ts-block" style="background:var(--border)"></div>`).join('');
+
+// WebSocket logic
+function setConnState(state, msg) {
+  const badge = document.getElementById('conn-badge');
+  const text  = document.getElementById('conn-text');
+  const status = document.getElementById('conn-status');
+  badge.className = 'conn-badge ' + state;
+  text.textContent = {connected:'Connected', connecting:'Connecting…', disconnected:'Disconnected'}[state];
+  if(msg) status.textContent = msg;
+}
+
+function connectWS() {
+  if(ws && ws.readyState < 2) ws.close();
+  const url = document.getElementById('ws-url').value.trim();
+  setConnState('connecting', 'Connecting to ' + url + '…');
+  ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    setConnState('connected', '✓ Connected — live data incoming');
+    document.getElementById('hint').textContent = 'Live sensor data incoming…';
+  };
+
+  ws.onmessage = (e) => {
+    try { ingestFrame(JSON.parse(e.data)); } catch(err) { console.error(err); }
+  };
+
+  ws.onerror = () => {
+    setConnState('disconnected',
+      '✗ Could not connect. Make sure ws_server.py is running: python ws_server.py');
+  };
+
+  ws.onclose = () => {
+    setConnState('disconnected', 'Connection closed. Click Connect to retry.');
+    ws = null;
+  };
+}
+
+function disconnectWS() {
+  if(ws) { ws.close(); ws = null; }
+  setConnState('disconnected', 'Manually disconnected.');
+}
+
+function toggleConnect() {
+  if(ws && ws.readyState < 2) disconnectWS();
+  else connectWS();
+}
+
+// Ingest a frame from ws_server.py
+function ingestFrame(f) {
+  const act = f.activity;
+  const idx = ACTIVITIES.indexOf(act);
+  if(idx < 0) return;
+
+  // Hero
+  const an = document.getElementById('act-name');
+  an.textContent = act;
+  an.style.color = COLORS[act];
+  const pct = Math.round(f.confidence * 100);
+  document.getElementById('conf-fill').style.width = pct + '%';
+  document.getElementById('conf-fill').style.background = COLORS[act];
+  document.getElementById('conf-pct').textContent = pct + '%';
+  document.getElementById('hint').textContent = HINTS[act] || '';
+
+  // Windows
+  document.getElementById('st-windows').textContent = f.windows;
+  document.getElementById('sb-windows').textContent = f.windows;
+  document.getElementById('sb-last').textContent =
+    new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+
+  // Probs
+  if(f.probs) {
+    f.probs.forEach((p, i) => {
+      const pc = Math.round(p * 100);
+      document.getElementById('pb' + i).style.width = pc + '%';
+      document.getElementById('pp' + i).textContent = pc + '%';
+    });
+  }
+
+  // Timeline
+  timeline.push(act);
+  if(timeline.length > 60) timeline.shift();
+  const blocks = document.getElementById('timeline').children;
+  for(let i = 0; i < 60; i++) {
+    const a = timeline[i];
+    blocks[i].style.background = a ? COLORS[a] + '99' : 'var(--border)';
+  }
+
+  // Raw sensor means
+  if(f.raw_mean && f.raw_mean.length === 6) {
+    f.raw_mean.forEach((v, i) => {
+      document.getElementById(RAW_IDS[i]).textContent = v.toFixed(3);
+    });
+  }
+
+  // Alerts from server (already filtered/cooldown-managed by alert_engine.py)
+  if(f.alerts && f.alerts.length) {
+    const now = new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+    f.alerts.forEach(a => {
+      alerts.unshift({...a, time: now});
+    });
+    if(alerts.length > 20) alerts.length = 20;
+    renderAlerts();
+  }
+
+  // Active / sitting time
+  if(ACTIVE_SET.has(act)) activeSec++;
+  if(act === 'Sitting') sittingSec++;
+  document.getElementById('st-active').textContent = fmt(activeSec);
+  document.getElementById('st-sit').textContent = fmt(sittingSec);
+}
+
+function renderAlerts() {
+  const list = document.getElementById('alert-list');
+  if(!alerts.length) {
+    list.innerHTML = '<div class="empty-alerts">No alerts yet — keep moving!</div>';
+    return;
+  }
+  list.innerHTML = alerts.map(a => `
+    <div class="alert-item ${a.level}">
+      <div class="adot"></div>
+      <div>${a.message}</div>
+      <div class="alert-time">${a.time}</div>
+    </div>`).join('');
+}
+
+function clearAlerts() { alerts = []; renderAlerts(); }
+
+function fmt(s) {
+  const m = Math.floor(s / 60), ss = Math.floor(s % 60);
+  return String(m).padStart(2,'0') + ':' + String(ss).padStart(2,'0');
+}
+
+// Timers
+setInterval(() => {
+  sessionSec++;
+  document.getElementById('st-session').textContent = fmt(sessionSec);
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-GB');
+}, 1000);
+</script>
+</body>
+</html>
